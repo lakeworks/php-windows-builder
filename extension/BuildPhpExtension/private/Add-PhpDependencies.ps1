@@ -18,7 +18,9 @@ Function Add-PhpDependencies {
         }
         $phpBaseUrl = 'https://downloads.php.net/~windows/php-sdk/deps'
         $phpTrunkBaseUrl = "https://downloads.php.net/~windows/php-sdk/deps/$($Config.vs_version)/$($Config.arch)"
-        $phpSeries = Get-File -Url "$phpBaseUrl/series/packages-$($Config.php_version)-$($Config.vs_version)-$($Config.arch)-staging.txt"
+        # Staging file uses branch version (e.g. "8.3"), not full version ("8.3.30")
+        $phpBranch = if ($Config.php_version -match '^\d+\.\d+$') { $Config.php_version } else { $Config.php_version -replace '^(\d+\.\d+)\..*$', '$1' }
+        $phpSeries = Get-File -Url "$phpBaseUrl/series/packages-$phpBranch-$($Config.vs_version)-$($Config.arch)-staging.txt"
         $phpTrunk = Get-File -Url $phpTrunkBaseUrl
         foreach ($library in $Config.php_libraries) {
             try {

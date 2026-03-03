@@ -20,8 +20,14 @@ function Get-PhpBuildDetails {
             $releaseState = if ($Config.php_version -match "[a-z]") {"qa"} else {"releases"}
             $baseUrl = "https://downloads.php.net/~windows/$releaseState"
             $fallbackBaseUrl = "https://downloads.php.net/~windows/$releaseState/archives"
-            $releases = Get-File -Url "$baseUrl/releases.json" | ConvertFrom-Json
-            $phpSemver = $releases.$($Config.php_version).version
+            $releases = (Get-File -Url "$baseUrl/releases.json").Content | ConvertFrom-Json
+            # releases.json uses branch keys (e.g. "8.3"), not full versions ("8.3.30")
+            $lookupVersion = if ($Config.php_version -match '^\d+\.\d+$') {
+                $Config.php_version
+            } else {
+                $Config.php_version -replace '^(\d+\.\d+)\..*$', '$1'
+            }
+            $phpSemver = $releases.$lookupVersion.version
             if($null -eq $phpSemver) {
                 $phpSemver = (Get-File -Url $fallbackBaseUrl).Links |
                         Where-Object { $_.href -match "php-($($Config.php_version).[0-9]+).*" } |

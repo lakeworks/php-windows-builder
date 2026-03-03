@@ -2,6 +2,8 @@ Function Get-File {
     <#
     .SYNOPSIS
         Downloads a file from a URL with retries and an optional fallback URL.
+        Uses System.Net.WebClient which is more reliable than Invoke-WebRequest
+        on servers with strict outbound firewall rules or WPAD auto-detection.
     .PARAMETER Url
         The primary URL to download the file from.
     .PARAMETER FallbackUrl
@@ -32,23 +34,31 @@ Function Get-File {
         [int] $TimeoutSec = 0
     )
 
+    function Invoke-Download {
+        param([string]$DownloadUrl, [string]$TargetFile)
+        $wc = New-Object System.Net.WebClient
+        $wc.Proxy = $null
+        try {
+            if ($TargetFile -ne '') {
+                $absolutePath = Join-Path (Get-Location).Path $TargetFile
+                $wc.DownloadFile($DownloadUrl, $absolutePath)
+            } else {
+                $wc.DownloadString($DownloadUrl)
+            }
+        } finally {
+            $wc.Dispose()
+        }
+    }
+
     for ($i = 0; $i -lt $Retries; $i++) {
         try {
-            if($OutFile -ne '') {
-                Invoke-WebRequest -Uri $Url -OutFile $OutFile -TimeoutSec $TimeoutSec -UseBasicParsing
-            } else {
-                Invoke-WebRequest -Uri $Url -TimeoutSec $TimeoutSec -UseBasicParsing
-            }
+            Invoke-Download -DownloadUrl $Url -TargetFile $OutFile
             break;
         } catch {
             if ($i -eq ($Retries - 1)) {
                 if($FallbackUrl) {
                     try {
-                        if($OutFile -ne '') {
-                            Invoke-WebRequest -Uri $FallbackUrl -OutFile $OutFile -TimeoutSec $TimeoutSec -UseBasicParsing
-                        } else {
-                            Invoke-WebRequest -Uri $FallbackUrl -TimeoutSec $TimeoutSec -UseBasicParsing
-                        }
+                        Invoke-Download -DownloadUrl $FallbackUrl -TargetFile $OutFile
                     } catch {
                         throw "Failed to download the file from $Url and $FallbackUrl - $($_.Exception.Message)"
                     }

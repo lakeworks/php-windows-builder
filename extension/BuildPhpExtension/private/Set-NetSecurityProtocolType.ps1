@@ -10,7 +10,7 @@ Function Set-NetSecurityProtocolType {
     }
     process {
         try {
-            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 + [Net.SecurityProtocolType]::Tls11 + [Net.SecurityProtocolType]::Tls
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         } catch {
             Write-Debug '[Net.ServicePointManager] or [Net.SecurityProtocolType] not found in current environment'
         }

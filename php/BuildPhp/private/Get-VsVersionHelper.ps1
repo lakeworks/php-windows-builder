@@ -24,9 +24,11 @@ function Get-VsVersionHelper {
         if (-not (Test-Path $vswherePath)) {
             throw "vswhere is not available"
         }
-        $MSVCDirectory = & $vswherePath -latest -products * -find "VC\Tools\MSVC"
+        $MSVCDirectories = @(& $vswherePath -all -products * -find "VC\Tools\MSVC")
         $selectedToolset = $null
         $minor = $null
+        foreach ($MSVCDirectory in $MSVCDirectories) {
+            if (-not (Test-Path $MSVCDirectory)) { continue }
         foreach ($toolset in (Get-ChildItem $MSVCDirectory)) {
             $toolsetMajorVersion, $toolsetMinorVersion = $toolset.Name.split(".")[0,1]
             $requiredVs = $VsConfig.vs.$VsVersion
@@ -39,6 +41,7 @@ function Get-VsVersionHelper {
                     $minor = $toolsetMinorVersion
                 }
             }
+        }
         }
 
         if (-not $selectedToolset) {
