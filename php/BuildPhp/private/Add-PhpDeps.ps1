@@ -51,10 +51,16 @@ function Add-PhpDeps {
 
         $seriesUrl = "$baseurl/series/packages-$depsPhpVersion-$VsVersion-$Arch-staging.txt"
         Write-Host "Fetching series listing: $seriesUrl"
-        $series = Invoke-WebRequest -Uri $seriesUrl -UseBasicParsing -ErrorAction Stop
+        $wc = New-Object System.Net.WebClient
+        $wc.Proxy = $null
+        try {
+            $seriesContent = $wc.DownloadString($seriesUrl)
+        } finally {
+            $wc.Dispose()
+        }
         $lines = @()
-        if ($series -and $series.Content) {
-            $lines = $series.Content -split "[\r\n]+" | Where-Object { $_ -and $_.Trim().Length -gt 0 }
+        if ($seriesContent) {
+            $lines = $seriesContent -split "[\r\n]+" | Where-Object { $_ -and $_.Trim().Length -gt 0 }
         }
 
         foreach ($line in $lines) {
@@ -69,7 +75,13 @@ function Add-PhpDeps {
             Write-Host "Processing package $line"
             $temp = New-TemporaryFile | Rename-Item -NewName { $_.Name + '.zip' } -PassThru
             $url = "$baseurl/$VsVersion/$Arch/$line"
-            Invoke-WebRequest -Uri $url -UseBasicParsing -OutFile $temp.FullName -ErrorAction Stop
+            $dlc = New-Object System.Net.WebClient
+            $dlc.Proxy = $null
+            try {
+                $dlc.DownloadFile($url, $temp.FullName)
+            } finally {
+                $dlc.Dispose()
+            }
             try {
                 Expand-Archive -LiteralPath $temp.FullName -DestinationPath $Destination -Force
             } catch {
