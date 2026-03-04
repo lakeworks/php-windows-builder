@@ -504,7 +504,8 @@ $_ret = $php->exec($this->getToolFn() . " plugin install wordpress-importer --ac
         # Allow newly-built php.exe/php-cgi.exe outbound access for PGO training
         # (downloads during init + HTTP requests to local NGINX on high ports)
         # Use PowerShell-computed path (Makefile parsing had trailing whitespace issues)
-        $pgiDir = "$buildDirectory\config\$($VsConfig.vs)\$Arch\obj\Release"
+        $releaseDir = if ($Ts -eq "ts") { "Release_TS" } else { "Release" }
+        $pgiDir = "$buildDirectory\config\$($VsConfig.vs)\$Arch\obj\$releaseDir"
         $pgoFwAdd = @(
             'rem [PGO] Add temporary firewall rules for PGO-instrumented PHP binaries'
             ('set "PGI_DIR={0}"' -f $pgiDir)
